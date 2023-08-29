@@ -1,0 +1,5 @@
+
+
+class Config:
+    ARDUINO_SERIAL_PORT = 'COM3'
+    ARDUINO_BAUD_RATE = 9600

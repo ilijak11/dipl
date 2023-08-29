@@ -1,0 +1,8 @@
+
+#define FAIL 0
+#define SUCCESS 1
+#define ENTERED_REGISTER_MODE 2
+#define CARD_PRESENT 3
+#define CARD_AUTH_FAIL 4
+#define CARD_WRITE_FAIL 5
+#define CARD_WRITE_SUCCESS 6

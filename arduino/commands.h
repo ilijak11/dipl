@@ -1,0 +1,3 @@
+
+
+#define REGISTER_MODE_COMMAND 1
