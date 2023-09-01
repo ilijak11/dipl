@@ -1,3 +1,3 @@
 
 #define BLOCK_SIZE_BYTES 16
-#define NAME_BLOCK 4
+#define ID_BLOCK 4

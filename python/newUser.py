@@ -1,6 +1,12 @@
 from arduino.utils import ArduinoUtils
 from arduino.commands import ArduinoCommands
 from arduino.responses import ArduinoResponses
+import hashlib
+
+
+hash = hashlib.sha256('marija kulic'.encode()).hexdigest()
+data = str(hash)[0:16]
+
 
 
 
@@ -18,7 +24,7 @@ try:
             ArduinoUtils.close_connection()
             break
         if res['code'] == ArduinoResponses.CARD_PRESENT:
-            ArduinoUtils.send_data('userID_on_card')
+            ArduinoUtils.send_data(data)
 except KeyboardInterrupt:
     ArduinoUtils.close_connection()
 

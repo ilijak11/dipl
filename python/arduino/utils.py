@@ -39,7 +39,7 @@ class ArduinoUtils:
     def wait_for_response():
         while True:
             res = s.readline()
-            print(res)
+            #print(res)
             if res:
                 return res.decode().strip()
 
