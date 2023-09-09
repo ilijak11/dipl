@@ -36,12 +36,15 @@ class ArduinoUtils:
         time.sleep(1)
 
     @staticmethod
-    def wait_for_response():
+    def wait_for_response(decode = True):
         while True:
             res = s.readline()
             #print(res)
             if res:
-                return res.decode().strip()
+                if decode:
+                    return res.decode().strip()
+                else:
+                    return res
 
     @staticmethod
     def close_connection():

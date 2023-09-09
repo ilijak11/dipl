@@ -8,8 +8,11 @@ struct DBHeader{
 DBHeader db_header;
 
 struct UserRecord{
-  char id[16];
+  byte id;
+  char tag[16];
+  char token[16];
   byte finger_id;
+  byte used;
 };
 
 void setup() {
@@ -29,7 +32,8 @@ void setup() {
   // Serial.println(db_header.count);
 
   read_header();
-
+  Serial.print("count: ");
+  Serial.println(db_header.count);
   for(int i = 0; i<db_header.count; i++){
     read_user_record(i);
   }
@@ -67,12 +71,26 @@ void read_user_record(byte index){
   UserRecord user;
   read_header();
   EEPROM.get(calculate_address(index), user);
-  Serial.print("user: ");
+  Serial.print("User: ");
   Serial.print(index);
+  Serial.println(" id: ");
+   Serial.println("User record: ");
   Serial.print(" id: ");
   Serial.print(user.id);
+  Serial.print(" tag: ");
+  for (uint8_t i = 0; i < 16; i++)
+  {
+    Serial.write(user.tag[i]);
+  }
+  Serial.print(" token: ");
+  for (uint8_t i = 0; i < 16; i++)
+  {
+    Serial.write(user.token[i]);
+  }
   Serial.print(" finger_id: ");
-  Serial.println(user.finger_id);
+  Serial.print(user.finger_id);
+  Serial.print(" used: ");
+  Serial.println(user.used);
 }
 
 unsigned int calculate_address(byte index){

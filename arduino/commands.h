@@ -1,3 +1,4 @@
 
 
 #define REGISTER_MODE_COMMAND 1
+#define READER_MODE_COMMAND 2

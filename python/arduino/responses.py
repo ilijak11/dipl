@@ -28,6 +28,7 @@ class ArduinoResponses:
     STORED = 26
     BAD_LOCATION = 27
     FLASH_ERROR = 28
+    WAITING_FOR_CARD = 29
 
 
 
@@ -176,6 +177,11 @@ response_message_map = {
         'code': ArduinoResponses.FLASH_ERROR,
         'status': 0,
         'message': 'flash error'
+    },
+    ArduinoResponses.WAITING_FOR_CARD: {
+        'code': ArduinoResponses.WAITING_FOR_CARD,
+        'status': 1,
+        'message': 'waiting for card - place card on reader...'
     },
 }
 

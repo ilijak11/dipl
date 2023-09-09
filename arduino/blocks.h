@@ -1,3 +1,6 @@
 
 #define BLOCK_SIZE_BYTES 16
-#define ID_BLOCK 4
+#define ID_BLOCK 12
+#define TAG_BLOCK 13
+#define TOKEN_BLOCK 14
+#define MASK_BLOCK 16

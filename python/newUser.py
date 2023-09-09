@@ -4,7 +4,7 @@ from arduino.responses import ArduinoResponses
 import hashlib
 
 
-hash = hashlib.sha256('marija kulic'.encode()).hexdigest()
+hash = hashlib.sha256('ilija kulic'.encode()).hexdigest()
 data = str(hash)[0:16]
 
 
