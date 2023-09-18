@@ -29,7 +29,19 @@ class ArduinoResponses:
     BAD_LOCATION = 27
     FLASH_ERROR = 28
     WAITING_FOR_CARD = 29
-
+    CARD_READ_FAIL = 30
+    CARD_READ_SUCCESS = 31
+    DB_READ_FAIL = 32
+    DB_READ_SUCCESS = 33
+    MATCH_TOKEN = 34
+    NO_MATCH_TOKEN = 35
+    MATCH_FINGER = 36
+    NO_MATCH_FINGER = 37
+    USER_REGISTERED = 38
+    USER_ACCESS = 39
+    DB_CLEAR = 40
+    WAITING_FOR_USER_ID = 41
+    USER_DELETED = 42
 
 
 response_message_map = {
@@ -183,8 +195,87 @@ response_message_map = {
         'status': 1,
         'message': 'waiting for card - place card on reader...'
     },
+    ArduinoResponses.CARD_READ_FAIL: {
+        'code': ArduinoResponses.CARD_READ_FAIL,
+        'status': 0,
+        'message': 'card read failed'
+    },
+    ArduinoResponses.CARD_READ_SUCCESS: {
+        'code': ArduinoResponses.CARD_READ_SUCCESS,
+        'status': 1,
+        'message': 'card read success'
+    },
+    ArduinoResponses.DB_READ_FAIL: {
+        'code': ArduinoResponses.DB_READ_FAIL,
+        'status': 0,
+        'message': 'arduino db read failed'
+    },
+    ArduinoResponses.DB_READ_SUCCESS: {
+        'code': ArduinoResponses.DB_READ_SUCCESS,
+        'status': 1,
+        'message': 'arduino db read success'
+    },
+    ArduinoResponses.MATCH_TOKEN: {
+        'code': ArduinoResponses.MATCH_TOKEN,
+        'status': 1,
+        'message': 'tokens match'
+    },
+    ArduinoResponses.NO_MATCH_TOKEN: {
+        'code': ArduinoResponses.NO_MATCH_TOKEN,
+        'status': 0,
+        'message': 'tokens do not match'
+    },
+    ArduinoResponses.MATCH_FINGER: {
+        'code': ArduinoResponses.MATCH_FINGER,
+        'status': 1,
+        'message': 'fingers match'
+    },
+    ArduinoResponses.NO_MATCH_FINGER: {
+        'code': ArduinoResponses.NO_MATCH_FINGER,
+        'status': 0,
+        'message': 'fingers do not match'
+    },
+    ArduinoResponses.USER_REGISTERED: {
+        'code': ArduinoResponses.USER_REGISTERED,
+        'status': 1,
+        'message': 'user register success'
+    },
+    ArduinoResponses.USER_ACCESS: {
+        'code': ArduinoResponses.USER_ACCESS,
+        'status': 1,
+        'message': 'user access success'
+    },
+    ArduinoResponses.DB_CLEAR: {
+        'code': ArduinoResponses.DB_CLEAR,
+        'status': 1,
+        'message': '*arduino user database and fingerprint databases have been cleared*'
+    },
+    ArduinoResponses.WAITING_FOR_USER_ID: {
+        'code': ArduinoResponses.WAITING_FOR_USER_ID,
+        'status': 1,
+        'message': 'waiting for user id'
+    },
+    ArduinoResponses.USER_DELETED: {
+        'code': ArduinoResponses.USER_DELETED,
+        'status': 1,
+        'message': 'user deleted'
+    },
 }
 
+
+# DELETING_USER = 41
+#     WAITING_FOR_USER_ID = 42
+#     USER_DELETED = 43
+
+
+# CARD_READ_FAIL = 30
+#     CARD_READ_SUCCESS = 31
+#     DB_READ_FAIL = 32
+#     DB_READ_SUCCESS = 33
+#     MATCH_TOKEN = 34
+#     NO_MATCH_TOKEN = 35
+#     MATCH_FINER = 36
+#     NO_MATCH_FINGER = 37
 
 # ENROLLING_FINGER = 10
 #     WAITING_FOR_FINGER = 11

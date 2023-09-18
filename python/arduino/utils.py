@@ -14,7 +14,7 @@ class ArduinoUtils:
 
     @staticmethod
     def decode_response(response):
-        print(response)
+        #print(response)
         res = int(response)
         if res in response_message_map:
             return response_message_map[res]
@@ -28,7 +28,6 @@ class ArduinoUtils:
     def send_command(command):
         s.write(f'{command}\r\n'.encode())
         time.sleep(1)
-
 
     @staticmethod
     def send_data(data):
@@ -45,6 +44,10 @@ class ArduinoUtils:
                     return res.decode().strip()
                 else:
                     return res
+
+    @staticmethod
+    def clear_input_buffer():
+        s.flushInput()
 
     @staticmethod
     def close_connection():

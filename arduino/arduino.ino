@@ -3,6 +3,7 @@
 #include <SoftwareSerial.h>
 #include <SPI.h>
 #include <EEPROM.h>
+#include <Servo.h>
 
 #include "messages.h"
 #include "commands.h"
@@ -17,11 +18,15 @@
 DBHeader db_header;
 byte mode = LOCK_MODE;
 
+byte error_no = 0;
+
 MFRC522 mfrc522(RFID_SS_PIN, RDIF_RST_PIN);
 MFRC522::MIFARE_Key key;
 
 SoftwareSerial softSerial(2,3);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&softSerial);
+
+Servo servo;
 
 void setup() {
   Serial.begin(9600);
@@ -32,6 +37,7 @@ void setup() {
   finger.begin(57600);
   finger.verifyPassword();
   read_header();
+  servo.attach(SERVO_PIN);
   delay(10);
   prepare_rfid_key();
   randomSeed(analogRead(A0));
@@ -49,6 +55,12 @@ void loop() {
     case READER_MODE:
       print_card_data_procedure();
       break;
+    case DELETE_USER_MODE:
+      delete_user_procedure();
+      break;
+    case CLEAR_DB_MODE:
+      clear_db_procedure();
+      break;
   }
 }
 
@@ -57,12 +69,16 @@ void receive_command() {
   byte command = Serial.readString().toInt();
   switch (command) {
     case REGISTER_MODE_COMMAND:
-      {
         mode = REGISTER_MODE;
         break;
-      }
     case READER_MODE_COMMAND:
         mode = READER_MODE;
+        break;
+    case DELETE_USER_COMMAND:
+        mode = DELETE_USER_MODE;
+        break;
+    case DELETE_ALL_USERS_COMMAND:
+        mode = CLEAR_DB_MODE;
         break;
     default:
       {
@@ -75,18 +91,27 @@ void error_procedure(){
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
   led_control(SUCC_1_2_OFF);
-  led_control(ERR_ON);
-  delay(20);
-  sound_control(BEEP_ERROR);
-  delay(1000);
-  led_control(ERR_OFF);
+  if(error_no == ERRORS_BEFORE_LOCKUP){
+    error_no = 0;
+    for(byte i = 0; i < ERROR_LOCKUP_DURATION; i++){
+      led_control(ERR_ON);
+      sound_control(BEEP_ERROR);
+      delay(1000);
+      led_control(ERR_OFF);
+    }
+  }
+  else {
+    error_no += 1;
+    led_control(ERR_ON);
+    sound_control(BEEP_ERROR);
+    delay(1000);
+    led_control(ERR_OFF);
+  }
 }
 
 void lock_procedure(){
 
   if(!(mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())) return;
-  //Serial.println(CARD_PRESENT);
-  Serial.println("Card present");
 
   char card_user_id[16];
   char card_user_tag[16];
@@ -172,12 +197,13 @@ void lock_procedure(){
   // -------------------------------------------------
 
   // compare tokens
-  if(!(strncmp(user.tag, card_user_tag, USER_TOKEN_LEN) == 0) && strncmp(user.token, res, USER_TOKEN_LEN) == 0){
-    Serial.println("Tokens dont match!");
+  if(!(user.used == DB_FIELD_USED && strncmp(user.tag, card_user_tag, USER_TOKEN_LEN) == 0) && strncmp(user.token, res, USER_TOKEN_LEN) == 0){
+    Serial.println(NO_MATCH_TOKEN);
     error_procedure();
     return;
   }
 
+  Serial.println(MATCH_TOKEN);
   led_control(SUCC_1_ON);
   sound_control(BEEP_1);
 
@@ -186,11 +212,12 @@ void lock_procedure(){
   // compare fingerptins
 
   if(!(finger.fingerID == user.finger_id && finger.confidence >= FINGERPRINT_CONF_TRESH)){
-    Serial.println("Fingerprints dont match");
+    Serial.println(NO_MATCH_FINGER);
     error_procedure();
     return;
   }
 
+  Serial.println(MATCH_FINGER);
   led_control(SUCC_2_ON);
   sound_control(BEEP_2);
 
@@ -203,7 +230,7 @@ void lock_procedure(){
 
   // write new token to card and db
   //  wait for card
-  Serial.println("Waiting for card:");
+  Serial.println(WAITING_FOR_CARD);
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
   while(!(mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())) delay(10);
@@ -213,19 +240,19 @@ void lock_procedure(){
     error_procedure();
     return;
   }
-  Serial.println("Wrote id");
+  //Serial.println("Wrote id");
 
   if(write_block(TOKEN_BLOCK, card_user_token, BLOCK_SIZE_BYTES) != MFRC522::STATUS_OK){
     error_procedure();
     return;
   }
-  Serial.println("Wrote new token");
+  //Serial.println("Wrote new token");
 
   if(write_block(MASK_BLOCK, card_user_mask, BLOCK_SIZE_BYTES) != MFRC522::STATUS_OK){
     error_procedure();
     return;
   }
-  Serial.println("Wrote new mask");
+  //Serial.println("Wrote new mask");
 
   // update user record
   if(update_user_record(user.id, user.tag, res, user.finger_id) != DB_SUCCESS){
@@ -233,13 +260,22 @@ void lock_procedure(){
     error_procedure();
     return;
   } else Serial.println(DB_WRITE_SUCCESS);
-  Serial.println("Updated user record");
+  //Serial.println("Updated user record");
+
+  Serial.println(USER_ACCESS);
+  char access_tag[17];
+  strncpy(access_tag, card_user_tag, USER_TOKEN_LEN);
+  access_tag[16] = '\0';
+  Serial.println(access_tag);
+  sound_control(BEEP_2);
 
   // unlock procedure
+  servo.write(175);
   delay(2000);
-  
-  delay(500);
+  servo.write(5);
   led_control(SUCC_1_2_OFF);
+
+  error_no = 0;
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
 }
@@ -307,11 +343,39 @@ void register_procedure() {
   Serial.println(ENROLLING_FINGER);
   enroll_fingerprint(finger_id);
 
+  Serial.println(USER_REGISTERED);
+
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
   delay(1000);
   mode = LOCK_MODE;
+  error_no = 0;
   led_control(REGISTER_MODE_OFF);
+}
+
+void delete_user_procedure() {
+  Serial.println(WAITING_FOR_USER_ID);
+  while(!Serial.available());
+  byte user_id = Serial.readString().toInt();
+  Serial.println(user_id);
+
+  UserRecord user;
+  if(read_user_record(user_id - 1, &user) != DB_SUCCESS){
+    Serial.println(DB_READ_FAIL);
+    error_procedure();
+    return;
+  } else Serial.println(DB_READ_SUCCESS);
+
+  finger.deleteModel(user.finger_id);
+
+  if(delete_user_record(user_id) != DB_SUCCESS){
+    Serial.println(DB_WRITE_FAIL);
+    error_procedure();
+    return;
+  } else Serial.println(DB_WRITE_SUCCESS);
+
+  Serial.println(USER_DELETED);
+  mode = LOCK_MODE;
 }
 
 void print_card_data_procedure(){
@@ -545,6 +609,13 @@ uint8_t update_user_record(byte user_id, const char* tag, const char* token, byt
   return DB_SUCCESS;
 }
 
+uint8_t delete_user_record(byte user_id){
+  UserRecord user;
+  user.used = DB_FIELD_UNUSED;
+  EEPROM.put(calculate_address(user_id - 1), user);
+  return DB_SUCCESS;
+}
+
 uint8_t read_user_record(byte user_id, UserRecord* user){
   read_header();
   if(db_header.count <= user_id) return DB_FAIL;
@@ -652,24 +723,24 @@ void sound_control(byte command){
 
 uint8_t getFingerprint() {
   int p = -1;
-  Serial.println("Waiting for finger");
+  Serial.println(WAITING_FOR_FINGER);
   while (p != FINGERPRINT_OK) {
     p = finger.getImage();
     switch (p) {
     case FINGERPRINT_OK:
-      Serial.println("Image taken");
+      Serial.println(IMAGE_TAKEN);
       break;
     case FINGERPRINT_NOFINGER:
       //Serial.println(".");
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Communication error");
+      Serial.println(COMMUNICATION_ERROR);
       break;
     case FINGERPRINT_IMAGEFAIL:
-      Serial.println("Imaging error");
+      Serial.println(IMAGE_ERROR);
       break;
     default:
-      Serial.println("Unknown error");
+      Serial.println(UNKNOWN_ERROR);
       break;
     }
   }
@@ -679,43 +750,43 @@ uint8_t getFingerprint() {
   p = finger.image2Tz();
   switch (p) {
     case FINGERPRINT_OK:
-      Serial.println("Image converted");
+      Serial.println(IMAGE_CONVERTED);
       break;
     case FINGERPRINT_IMAGEMESS:
-      Serial.println("Image too messy");
+      Serial.println(IMAGE_MESSY);
       return p;
     case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Communication error");
+      Serial.println(COMMUNICATION_ERROR);
       return p;
     case FINGERPRINT_FEATUREFAIL:
-      Serial.println("Could not find fingerprint features");
+      Serial.println(NO_FEATURES);
       return p;
     case FINGERPRINT_INVALIDIMAGE:
-      Serial.println("Could not find fingerprint features");
+      Serial.println(NO_FEATURES);
       return p;
     default:
-      Serial.println("Unknown error");
+      Serial.println(UNKNOWN_ERROR);
       return p;
   }
 
   // OK converted!
   p = finger.fingerSearch();
   if (p == FINGERPRINT_OK) {
-    Serial.println("Found a print match!");
+    Serial.println(MATCH);
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println("Communication error");
+    Serial.println(COMMUNICATION_ERROR);
     return p;
   } else if (p == FINGERPRINT_NOTFOUND) {
-    Serial.println("Did not find a match");
+    Serial.println(NO_MATCH);
     return p;
   } else {
-    Serial.println("Unknown error");
+    Serial.println(UNKNOWN_ERROR);
     return p;
   }
 
   // found a match!
-  Serial.print("Found ID #"); Serial.print(finger.fingerID);
-  Serial.print(" with confidence of "); Serial.println(finger.confidence);
+  //Serial.print("Found ID #"); Serial.print(finger.fingerID);
+  //Serial.print(" with confidence of "); Serial.println(finger.confidence);
 
   return finger.fingerID;
 }
@@ -738,4 +809,17 @@ void execute_operation(byte* buff1, byte* buff2, byte* res, byte op){
       case OR:  res[i] = buff1[i] | buff2[i]; break;
     }
   }
+}
+
+void reser_header(){
+  db_header.count = 0;
+  db_header.start_address = 0 + (unsigned int)sizeof(DBHeader);
+  write_header();
+}
+
+void clear_db_procedure(){
+  reser_header();
+  finger.emptyDatabase();
+  Serial.println(DB_CLEAR);
+  mode = LOCK_MODE;
 }
