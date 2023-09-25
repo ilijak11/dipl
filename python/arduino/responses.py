@@ -42,6 +42,7 @@ class ArduinoResponses:
     DB_CLEAR = 40
     WAITING_FOR_USER_ID = 41
     USER_DELETED = 42
+    MATCH_CONFIDENCE_LOW = 43
 
 
 response_message_map = {
@@ -259,6 +260,11 @@ response_message_map = {
         'code': ArduinoResponses.USER_DELETED,
         'status': 1,
         'message': 'user deleted'
+    },
+    ArduinoResponses.MATCH_CONFIDENCE_LOW: {
+        'code': ArduinoResponses.MATCH_CONFIDENCE_LOW,
+        'status': 0,
+        'message': 'match confidence too low'
     },
 }
 

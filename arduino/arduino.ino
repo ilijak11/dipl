@@ -211,8 +211,14 @@ void lock_procedure(){
   getFingerprint();
   // compare fingerptins
 
-  if(!(finger.fingerID == user.finger_id && finger.confidence >= FINGERPRINT_CONF_TRESH)){
+  if(finger.fingerID != user.finger_id){
     Serial.println(NO_MATCH_FINGER);
+    error_procedure();
+    return;
+  }
+
+  if(finger.confidence <= FINGERPRINT_CONF_TRESH){
+    Serial.println(MATCH_CONFIDENCE_LOW);
     error_procedure();
     return;
   }
